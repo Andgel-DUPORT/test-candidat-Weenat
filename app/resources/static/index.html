@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastAPI Data Retrieval</title>
+</head>
+<body>
+<h1>FastAPI Data Retrieval</h1>
+
+<h2>API Endpoint: /api/summary</h2>
+<form id="summaryForm">
+    <label for="datalogger">Datalogger ID:</label>
+    <input type="text" id="datalogger" name="datalogger" required>
+
+    <label for="since">Since (optional):</label>
+    <input type="datetime-local" id="since" name="since">
+
+    <label for="before">Before (optional):</label>
+    <input type="datetime-local" id="before" name="before">
+
+    <!--        <label for="span">Span (optional):</label>-->
+    <!--        <select id="span" name="span">-->
+    <!--            <option value="day">Day</option>-->
+    <!--            <option value="hour">Hour</option>-->
+    <!--            <option value="max">Max</option>-->
+    <!--        </select>-->
+
+    <button type="button" onclick="fetchSummaryData()">Fetch Data</button>
+</form>
+
+<h2>API Endpoint: /api/data</h2>
+<form id="dataForm">
+    <label for="dataloggerRaw">Datalogger ID:</label>
+    <input type="text" id="dataloggerRaw" name="datalogger" required>
+
+    <label for="since">Since (optional):</label>
+    <input type="datetime-local" id="sinceRaw" name="since">
+
+    <label for="beforeRaw">Before (optional):</label>
+    <input type="datetime-local" id="beforeRaw" name="before">
+
+    <button type="button" onclick="fetchRawData()">Fetch Raw Data</button>
+</form>
+
+<h2>Result:</h2>
+<pre id="result"></pre>
+
+<script>
+    async function fetchData(endpoint) {
+        const form = document.getElementById(`${endpoint}Form`);
+        const resultElement = document.getElementById("result");
+
+        const formData = new FormData(form);
+        const params = new URLSearchParams(formData);
+
+        try {
+            const response = await fetch(`/api/${endpoint}?${params.toString()}`);
+            const data = await response.json();
+            resultElement.textContent = JSON.stringify(data, null, 2);
+        } catch (error) {
+            resultElement.textContent = `Error: ${error.message}`;
+        }
+    }
+
+    function fetchSummaryData() {
+        fetchData("summary");
+    }
+
+    function fetchRawData() {
+        fetchData("data");
+    }
+
+</script>
+</body>
+</html>
