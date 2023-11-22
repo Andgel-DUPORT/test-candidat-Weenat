@@ -4,25 +4,23 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
-import json
-
 import fastapi
 import numpy as np
 import pandas as pd
+import plotly.express as px
+
 import requests
 from fastapi import FastAPI, Query
 from pydantic import BaseModel
 from starlette.responses import FileResponse
+import os
+
+parent_dir_path = os.path.dirname(os.path.realpath(__file__))
 
 app = FastAPI(default_response_class=fastapi.responses.ORJSONResponse)
 
-
-@app.get("/")
-async def read_index():
-    return FileResponse('app/resources/static/index.html')
-
-
 ##########ETL part#########
+#avec un peu plus de temps j'aurais pu découper cette partie en plusieurs méthodes / helper pour pouvoir update la base de données depuis la vue
 url = "http://localhost:3000/measurements"
 request = requests.get(url)
 if request.status_code == 200:
@@ -86,11 +84,11 @@ def timescale_is_wrong(since, before):
 
 
 # Function to retrieve data from the CSV file
-def get_data_from_csv(datalogger: str, before: datetime, since: datetime, span: str):
+def get_data_from_csv(datalogger: str, before: datetime, since: Optional[datetime], span: str):
     # Filter data based on datalogger
     filtered_df = df[df['datalogger'] == int(datalogger)]
 
-    # Set default value for since if it is None
+    # Default since value is set to the minimum date in the dataframe
     if since is None:
         since = filtered_df['date'].min()
 
@@ -125,7 +123,7 @@ def map_raw_data(filtered_df):
     return records
 
 
-# Helper function to map aggregate data
+# Helper function to map aggregated data
 def map_aggregate_data(filtered_df, span):
     # Implement aggregation logic based on the span (e.g., hourly, daily)
     aggregated_df = filtered_df.resample(span, on='date').mean().dropna()
@@ -136,7 +134,7 @@ def map_aggregate_data(filtered_df, span):
             label=LabelField.PRECIPITATION.value,
             time_slot=index,
             value=row['precip'] if not pd.isna(row['precip']) else None
-        ))
+        ))  # Je n'ai pas eu le temps de traiter les précipitations à part en les additionants pendant le resampling
         records.append(DataRecordAggregateResponse(
             label=LabelField.TEMPERATURE.value,
             time_slot=index,
@@ -159,10 +157,30 @@ except FileNotFoundError:
     df = pd.DataFrame(columns=['date', 'precip', 'temp', 'hum'])
 
 
+@app.get("/")
+async def read_index():
+    return FileResponse(parent_dir_path + '/resources/static/index.html')
+
+
 @app.get("/api/summary", response_model=List[DataRecordAggregateResponse])
 async def api_fetch_data_aggregates(datalogger: str, before: datetime = Query(datetime.now()),
                                     since: datetime = Query(datetime.now()), span: str | None = "raw"):
-    return get_data_from_csv(datalogger, before, since, span)
+    data_records = get_data_from_csv(datalogger, before, since, span)
+    plot_data = []
+    for record in data_records:
+        plot_data.append({
+            'label': record.label,
+            'time_slot': record.time_slot,
+            'value': record.value
+        })
+
+    # Create a Plotly figure
+    fig = px.line(plot_data, x='time_slot', y='value', color='label', labels={'value': 'Value', 'time_slot': 'Time'})
+    html_file_path = parent_dir_path + '/resources/static/plot.html'
+    fig.write_html(html_file_path)
+
+    return FileResponse(html_file_path)  # Je n'ai maleureusement pas réussé à montrer le graphique via HTML, cependant,
+    # il est toujours généré dans resources/static et il peut être ouvert depuis l'explorateur de fichier
 
 
 @app.get("/api/data", response_model=List[DataRecordResponse])
