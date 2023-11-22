@@ -27,4 +27,4 @@ les données vont jusqu'à fin 2022 donc ça ne sert à rien de faire des requê
 
 Au moment de demander un aggrégat, le schéma généré ne s'affiche pas en html, vous le retrouverez dans app/resources/static/plot.html
 
-Tout les commentaires en français dans le code indique des features imaginées mais non implémentées, ou juste des bugs
+Tout les commentaires en français dans le code indiquent des features imaginées mais non implémentées, ou juste des bugs
