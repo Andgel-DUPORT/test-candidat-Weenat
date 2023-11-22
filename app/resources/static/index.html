@@ -19,12 +19,12 @@
     <label for="before">Before (optional):</label>
     <input type="datetime-local" id="before" name="before">
 
-    <!--        <label for="span">Span (optional):</label>-->
-    <!--        <select id="span" name="span">-->
-    <!--            <option value="day">Day</option>-->
-    <!--            <option value="hour">Hour</option>-->
-    <!--            <option value="max">Max</option>-->
-    <!--        </select>-->
+            <label for="span">Span (optional):</label>
+            <select id="span" name="span">
+                <option value="W">Week</option>
+                <option value="D">Day</option>
+                <option value="H">Hour</option>
+            </select>
 
     <button type="button" onclick="fetchSummaryData()">Fetch Data</button>
 </form>
@@ -52,7 +52,14 @@
         const resultElement = document.getElementById("result");
 
         const formData = new FormData(form);
-        const params = new URLSearchParams(formData);
+        const params = new URLSearchParams();
+
+        formData.forEach((value, key) => {
+            if (value !== "") {
+                params.append(key, value);
+            }
+        });
+
 
         try {
             const response = await fetch(`/api/${endpoint}?${params.toString()}`);
